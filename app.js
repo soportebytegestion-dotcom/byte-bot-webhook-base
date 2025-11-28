@@ -4,20 +4,21 @@ import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
 console.log("🔐 OPENAI_API_KEY existe?", !!process.env.OPENAI_API_KEY);
+if (process.env.OPENAI_API_KEY) {
+  console.log("API KEY cargada: SI");
+} else {
+  console.log("API KEY cargada: NO ❌");
+}
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Para debug (podés borrar después)
-console.log("API KEY cargada:", process.env.OPENAI_API_KEY ? "SI" : "NO");
-
+// ===========================
+// 🔥 RUTA WEBHOOK FRESHCHAT
+// ===========================
 app.post("/webhook", async (req, res) => {
-  const mensajeUsuario =
-    req.body.mensaje ||
-    req.body.message ||
-    req.body.text ||
-    JSON.stringify(req.body);
+  const mensajeUsuario = req.body.mensaje;
 
   console.log("🟢 Webhook recibido:", mensajeUsuario);
 
@@ -31,15 +32,8 @@ app.post("/webhook", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          {
-            role: "system",
-            content:
-              "Sos Jarvis, el asistente virtual de Byte Gestión. Respondé siempre de manera clara, profesional y directa."
-          },
-          {
-            role: "user",
-            content: mensajeUsuario
-          }
+          { role: "system", content: "Sos Jarvis, el asistente virtual de Byte Gestión. Respondé siempre de manera clara y profesional." },
+          { role: "user", content: mensajeUsuario }
         ],
         max_tokens: 300
       })
@@ -47,15 +41,27 @@ app.post("/webhook", async (req, res) => {
 
     const data = await openaiResponse.json();
 
-    // Mostrar errores de OpenAI
-    if (!openaiResponse.ok) {
-      console.error("🔥 Error OpenAI:", data);
-      throw new Error("OpenAI no respondió bien");
+    console.log("🔵 Respuesta RAW de OpenAI:", JSON.stringify(data, null, 2));
+
+    if (data.error) {
+      console.error("❌ ERROR DE OPENAI:", data.error);
     }
 
-    const respuesta =
-      data.choices?.[0]?.message?.content ||
-      "Lo siento, no pude generar una respuesta.";
+    const respuesta = data.choices?.[0]?.message?.content;
+
+    if (!respuesta) {
+      console.warn("⚠ No se generó respuesta, devolviendo fallback…");
+      return res.json({
+        fulfillment: {
+          messages: [
+            {
+              type: "text",
+              text: "Lo siento, no pude generar una respuesta."
+            }
+          ]
+        }
+      });
+    }
 
     console.log("🟣 Respuesta de ChatGPT:", respuesta);
 
@@ -78,7 +84,7 @@ app.post("/webhook", async (req, res) => {
         messages: [
           {
             type: "text",
-            text: "Hubo un error procesando tu consulta."
+            text: "Lo siento, hubo un problema procesando tu consulta."
           }
         ]
       }
@@ -86,7 +92,9 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
+// ===========================
+// 🚀 START SERVER
+// ===========================
 app.listen(3000, () => {
   console.log("🚀 Servidor escuchando en puerto 3000");
 });
-
