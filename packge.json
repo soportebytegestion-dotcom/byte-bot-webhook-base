@@ -1,0 +1,12 @@
+{
+  "name": "byte-bot-webhook-base",
+  "version": "1.0.0",
+  "description": "Servidor básico para webhook Freshchat",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
