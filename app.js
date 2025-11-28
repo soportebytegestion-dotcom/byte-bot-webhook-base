@@ -3,6 +3,8 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
 
+console.log("🔐 OPENAI_API_KEY existe?", !!process.env.OPENAI_API_KEY);
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -87,3 +89,4 @@ app.post("/webhook", async (req, res) => {
 app.listen(3000, () => {
   console.log("🚀 Servidor escuchando en puerto 3000");
 });
+
